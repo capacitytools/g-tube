@@ -36,7 +36,7 @@ async function loadVideos() {
             </div>
         `).join('');
     } catch (error) {
-        mainContent.innerHTML = '<div class="loading">Error loading videos. Is the server running?</div>';
+        mainContent.innerHTML = '<div class="loading">Error loading videos.</div>';
     }
 }
 
@@ -47,11 +47,14 @@ function openVideo(video) {
     const details = document.getElementById('videoDetails');
 
     let embedHtml = '';
-    if (video.platform === 'youtube') {        embedHtml = `<iframe src="${video.embedUrl}" allowfullscreen></iframe>`;
-    } else if (video.platform === 'facebook') {
+        if (video.platform === 'youtube') {
         embedHtml = `<iframe src="${video.embedUrl}" allowfullscreen></iframe>`;
-    } else if (video.platform === 'instagram') {
-        embedHtml = `<p style="padding:20px; text-align:center;">Instagram videos require direct embedding. Please watch on Instagram.</p>`;
+    } 
+    else if (video.platform === 'facebook') {
+        embedHtml = `<iframe src="${video.embedUrl}" width="560" height="315" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>`;
+    } 
+    else if (video.platform === 'instagram') {
+        embedHtml = `<iframe src="${video.embedUrl}" width="400" height="500" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
     }
 
     player.innerHTML = `<div class="video-player">${embedHtml}</div>`;
@@ -61,7 +64,7 @@ function openVideo(video) {
 
 function closeModal() {
     document.getElementById('videoModal').classList.remove('active');
-    document.getElementById('playerContainer').innerHTML = ''; // Stop video
+    document.getElementById('playerContainer').innerHTML = '';
 }
 
 // 3. Navigation Switching
@@ -69,7 +72,6 @@ function showPage(page) {
     const mainContent = document.getElementById('mainContent');
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
     
-    // Find the button that was clicked and make it active
     const buttons = document.querySelectorAll('.nav-item');
     if(page === 'home') buttons[0].classList.add('active');
     if(page === 'gchat') buttons[1].classList.add('active');
@@ -79,9 +81,9 @@ function showPage(page) {
     if (page === 'home') {
         loadVideos();
     } else if (page === 'gchat') {
-        mainContent.innerHTML = '<div class="loading"> G-Chat is coming soon!</div>';
+        mainContent.innerHTML = '<div class="loading">💬 G-Chat is coming soon!</div>';
     } else if (page === 'rewards') {
-        mainContent.innerHTML = '<div class="loading"> Daily AI Quiz coming soon!</div>';
+        mainContent.innerHTML = '<div class="loading">🎁 Daily AI Quiz coming soon!</div>';
     } else if (page === 'admin') {
         if (adminToken) {
             renderAdminPanel();
@@ -94,9 +96,9 @@ function showPage(page) {
 // 4. Admin Login Screen
 function renderLoginScreen() {
     document.getElementById('mainContent').innerHTML = `
-        <div class="login-container">
-            <h2 style="margin-bottom:20px;">Admin Login</h2>
-            <div class="form-group">                <label>Username</label>
+        <div class="login-container">            <h2 style="margin-bottom:20px;">Admin Login</h2>
+            <div class="form-group">
+                <label>Username</label>
                 <input type="text" id="loginUser" value="admin">
             </div>
             <div class="form-group">
@@ -126,8 +128,7 @@ async function doLogin() {
         const data = await res.json();
         if (data.token) {
             adminToken = data.token;
-            // FIX: Changed 'token' to 'data.token'
-            localStorage.setItem('adminToken', data.token); 
+            localStorage.setItem('adminToken', data.token);
             renderAdminPanel();
         } else {
             alert(data.message || 'Login failed');
@@ -144,8 +145,8 @@ async function doLogin() {
 // 5. Admin Dashboard (The "Paste Link" Magic)
 function renderAdminPanel() {
     document.getElementById('mainContent').innerHTML = `
-        <div class="admin-container">
-            <h2 style="margin-bottom:20px;">Add New Video</h2>            <div class="form-group">
+        <div class="admin-container">            <h2 style="margin-bottom:20px;">Add New Video</h2>
+            <div class="form-group">
                 <label>Paste Video Link (YouTube, FB, Insta)</label>
                 <input type="url" id="videoLink" placeholder="https://...">
             </div>
@@ -180,11 +181,9 @@ async function addVideo() {
     }
 
     try {
-        // Step 1: Fetch info from our backend
         const infoRes = await fetch(`${API_URL}/api/fetch-video-info?url=${encodeURIComponent(url)}`);
         const info = await infoRes.json();
 
-        // Step 2: Save to database
         const saveRes = await fetch(`${API_URL}/api/admin/videos`, {
             method: 'POST',
             headers: { 
@@ -194,8 +193,8 @@ async function addVideo() {
                 title: info.title || 'New Video',
                 url: url,
                 platform: info.platform,
-                category: category,                thumbnail: info.thumbnail,
-                embedUrl: info.embedUrl,
+                category: category,
+                thumbnail: info.thumbnail,                embedUrl: info.embedUrl,
                 videoId: info.videoId
             })
         });

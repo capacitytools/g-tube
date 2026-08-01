@@ -41,7 +41,7 @@ const Admin = mongoose.model('Admin', AdminSchema);
 
 // --- ROUTES ---
 
-// 1. Get All Videos (For Homepage)
+// 1. Get All Videos
 app.get('/api/videos', async (req, res) => {
     try {
         const { category } = req.query;
@@ -52,7 +52,7 @@ app.get('/api/videos', async (req, res) => {
     }
 });
 
-// 2. Auto-Fetch Video Info (The Magic Link Feature)
+// 2. Auto-Fetch Video Info (IMPROVED - with Instagram oEmbed)
 app.get('/api/fetch-video-info', async (req, res) => {
     const url = req.query.url;
     let info = { url, platform: 'general', videoId: '', embedUrl: '', thumbnail: '', title: 'Video' };
@@ -67,16 +67,37 @@ app.get('/api/fetch-video-info', async (req, res) => {
     else if (url.includes('facebook.com') || url.includes('fb.watch')) {
         info.platform = 'facebook';
         info.embedUrl = url;
-        info.thumbnail = 'https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png';
+        // Try to extract video ID for thumbnail
+        const match = url.match(/facebook\.com\/(?:[^/]+\/)*(?:videos|permalink|photos)\/[^/]+\/(\d+)/);
+        if (match) {
+            // Facebook doesn't provide easy thumbnails, use placeholder
+            info.thumbnail = 'https://www.facebook.com/images/fb_icon_325x325.png';
+        } else {
+            info.thumbnail = 'https://www.facebook.com/images/fb_icon_325x325.png';
+        }
+        info.title = 'Facebook Video';
     }
     else if (url.includes('instagram.com')) {
         info.platform = 'instagram';
         const match = url.match(/instagram\.com\/p\/([a-zA-Z0-9_-]+)/);
         if (match) {
             info.videoId = match[1];
-        }
+            // Use Instagram oEmbed to get thumbnail
+            try {
+                const oembedUrl = `https://www.instagram.com/oembed?url=${encodeURIComponent(url)}`;
+                const response = await fetch(oembedUrl);
+                const data = await response.json();
+                if (data.thumbnail_url) {
+                    info.thumbnail = data.thumbnail_url;
+                }
+                if (data.title) {
+                    info.title = data.title;
+                }
+            } catch (e) {
+                // Fallback if oEmbed fails
+                info.thumbnail = `https://www.instagram.com/p/${info.videoId}/media/?size=l`;
+            }        }
         info.embedUrl = url;
-        info.thumbnail = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png';
     }
 
     res.json(info);
@@ -96,13 +117,14 @@ app.post('/api/admin/login', async (req, res) => {
         res.json({ token });
     } catch (error) {
         res.status(500).json({ message: 'Login error' });
-    }});
+    }
+});
 
 // 4. Add Video (Admin Only)
 app.post('/api/admin/videos', async (req, res) => {
     try {
-        const { title, url, platform, category, thumbnail, embedUrl, videoId } = req.body;
-        const newVideo = new Video({ title, url, platform, category, thumbnail, embedUrl, videoId });
+        const { title, url, platform, category, thumbnail, embedUrl, videoId, description } = req.body;
+        const newVideo = new Video({ title, url, platform, category, thumbnail, embedUrl, videoId, description });
         await newVideo.save();
         res.json({ message: 'Video added!', video: newVideo });
     } catch (error) {
@@ -110,21 +132,20 @@ app.post('/api/admin/videos', async (req, res) => {
     }
 });
 
-// 5. Update Video (Edit title/description)
+// 5. Update Video
 app.put('/api/admin/videos/:id', async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { title, description, thumbnail } = req.body;
         const video = await Video.findByIdAndUpdate(
             req.params.id,
-            { title, description, updatedAt: Date.now() },
+            { title, description, thumbnail, updatedAt: Date.now() },
             { new: true }
         );
         if (!video) return res.status(404).json({ message: 'Video not found' });
         res.json({ message: 'Video updated!', video });
     } catch (error) {
         res.status(500).json({ message: 'Error updating video' });
-    }
-});
+    }});
 
 // 6. Delete Video
 app.delete('/api/admin/videos/:id', async (req, res) => {
@@ -137,5 +158,4 @@ app.delete('/api/admin/videos/:id', async (req, res) => {
     }
 });
 
-// Tell Vercel to run this app
 module.exports = app;

@@ -47,7 +47,8 @@ app.get('/api/videos', async (req, res) => {
 });
 
 // 2. Auto-Fetch Video Info (The Magic Link Feature)
-app.get('/api/fetch-video-info', async (req, res) => {    const url = req.query.url;
+app.get('/api/fetch-video-info', async (req, res) => {
+    const url = req.query.url;
     let info = { url, platform: 'general', videoId: '', embedUrl: '', thumbnail: '', title: 'Video' };
 
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -90,12 +91,5 @@ app.post('/api/admin/videos', async (req, res) => {
     res.json({ message: 'Video added!', video: newVideo });
 });
 
-// 5. Create First Admin (Run once, then delete)
-app.get('/api/create-admin', async (req, res) => {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    const admin = new Admin({ username: 'admin', password: hashedPassword, email: 'you@email.com' });
-    await admin.save();
-    res.send('Admin created! Now delete this code in server.js and save.');
-});
 // Tell Vercel to run this app
 module.exports = app;

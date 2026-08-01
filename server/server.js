@@ -19,6 +19,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // --- DATABASE MODELS ---
 const VideoSchema = new mongoose.Schema({
     title: String,
+    description: String,
     url: String,
     platform: String,
     category: String,
@@ -43,11 +44,13 @@ const Admin = mongoose.model('Admin', AdminSchema);
 // 1. Get All Videos (For Homepage)
 app.get('/api/videos', async (req, res) => {
     try {
-        const videos = await Video.find().sort({ createdAt: -1 });
-        res.json(videos);
-    } catch (error) {
+        const { category } = req.query;
+        const query = category && category !== 'All' ? { category } : {};
+        const videos = await Video.find(query).sort({ createdAt: -1 });
+        res.json(videos);    } catch (error) {
         res.status(500).json({ error: 'Failed to fetch videos' });
-    }});
+    }
+});
 
 // 2. Auto-Fetch Video Info (The Magic Link Feature)
 app.get('/api/fetch-video-info', async (req, res) => {
@@ -63,7 +66,7 @@ app.get('/api/fetch-video-info', async (req, res) => {
     } 
     else if (url.includes('facebook.com') || url.includes('fb.watch')) {
         info.platform = 'facebook';
-        info.embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=560`;
+        info.embedUrl = url;
         info.thumbnail = 'https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png';
     }
     else if (url.includes('instagram.com')) {
@@ -71,10 +74,8 @@ app.get('/api/fetch-video-info', async (req, res) => {
         const match = url.match(/instagram\.com\/p\/([a-zA-Z0-9_-]+)/);
         if (match) {
             info.videoId = match[1];
-            info.embedUrl = `https://www.instagram.com/p/${match[1]}/embed`;
-        } else {
-            info.embedUrl = url;
         }
+        info.embedUrl = url;
         info.thumbnail = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png';
     }
 
@@ -95,8 +96,8 @@ app.post('/api/admin/login', async (req, res) => {
         res.json({ token });
     } catch (error) {
         res.status(500).json({ message: 'Login error' });
-    }
-});
+    }});
+
 // 4. Add Video (Admin Only)
 app.post('/api/admin/videos', async (req, res) => {
     try {
@@ -106,6 +107,33 @@ app.post('/api/admin/videos', async (req, res) => {
         res.json({ message: 'Video added!', video: newVideo });
     } catch (error) {
         res.status(500).json({ message: 'Error adding video' });
+    }
+});
+
+// 5. Update Video (Edit title/description)
+app.put('/api/admin/videos/:id', async (req, res) => {
+    try {
+        const { title, description } = req.body;
+        const video = await Video.findByIdAndUpdate(
+            req.params.id,
+            { title, description, updatedAt: Date.now() },
+            { new: true }
+        );
+        if (!video) return res.status(404).json({ message: 'Video not found' });
+        res.json({ message: 'Video updated!', video });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating video' });
+    }
+});
+
+// 6. Delete Video
+app.delete('/api/admin/videos/:id', async (req, res) => {
+    try {
+        const video = await Video.findByIdAndDelete(req.params.id);
+        if (!video) return res.status(404).json({ message: 'Video not found' });
+        res.json({ message: 'Video deleted!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting video' });
     }
 });
 

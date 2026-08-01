@@ -2,12 +2,10 @@ const API_URL = window.location.origin;
 let adminToken = localStorage.getItem('adminToken');
 let currentCategory = 'All';
 
-// Load videos when page opens
 document.addEventListener('DOMContentLoaded', () => {
     loadVideos();
 });
 
-// Load and Display Videos
 async function loadVideos() {
     const mainContent = document.getElementById('mainContent');
     mainContent.innerHTML = '<div class="loading">Loading videos...</div>';
@@ -28,7 +26,10 @@ async function loadVideos() {
 
         mainContent.innerHTML = videos.map(video => `
             <div class="video-card" onclick='openVideo(${JSON.stringify(video).replace(/'/g, "\\'")})'>
-                <img src="${video.thumbnail || 'https://via.placeholder.com/300x169'}" class="thumbnail" alt="${video.title}">
+                <img src="${video.thumbnail || 'https://via.placeholder.com/300x169'}" 
+                     class="thumbnail" 
+                     alt="${video.title}"
+                     onerror="this.src='https://via.placeholder.com/300x169?text=${video.platform}+Video'">
                 <div class="video-info">
                     <div class="video-title">${video.title}</div>
                     <div class="video-meta">
@@ -44,7 +45,6 @@ async function loadVideos() {
     }
 }
 
-// Filter by Category
 function filterCategory(category) {
     currentCategory = category;
     document.querySelectorAll('.cat-btn').forEach(btn => {        btn.classList.remove('active');
@@ -53,7 +53,6 @@ function filterCategory(category) {
     loadVideos();
 }
 
-// Play Video in Modal
 function openVideo(video) {
     const modal = document.getElementById('videoModal');
     const player = document.getElementById('playerContainer');
@@ -65,22 +64,39 @@ function openVideo(video) {
         embedHtml = `<iframe src="${video.embedUrl}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
     } 
     else if (video.platform === 'facebook') {
+        // Facebook embed with better error handling
         embedHtml = `
-            <div style="width:100%;height:100%;">
-                <iframe src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(video.url)}&show_text=false&width=560" 
+            <div style="width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;">
+                <iframe src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(video.url)}&show_text=false&width=560&height=315" 
                     width="100%" height="100%" style="border:none;overflow:hidden" scrolling="no" 
                     frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
                 </iframe>
+                <div id="fbError" style="display:none;position:absolute;color:white;text-align:center;padding:20px;">
+                    <p style="font-size:20px;margin-bottom:10px;">️ Video Unavailable</p>
+                    <p>This Facebook video may be private or deleted.</p>
+                    <a href="${video.url}" target="_blank" style="color:#4169E1;margin-top:10px;display:inline-block;">Watch on Facebook →</a>
+                </div>
             </div>
+            <script>
+                setTimeout(function() {
+                    var iframe = document.querySelector('iframe');
+                    if (iframe && iframe.clientHeight === 0) {
+                        document.getElementById('fbError').style.display = 'block';
+                    }
+                }, 3000);
+            </script>
         `;
     } 
     else if (video.platform === 'instagram') {
         embedHtml = `
-            <div style="width:100%;height:100%;overflow:auto;">
-                <blockquote class="instagram-media" data-instgrm-permalink="${video.url}" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>
+            <div style="width:100%;height:100%;overflow:auto;background:#000;">
+                <blockquote class="instagram-media" 
+                    data-instgrm-permalink="${video.url}" 
+                    data-instgrm-version="14" 
+                    style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);">
+                </blockquote>
             </div>
-        `;
-    }
+        `;    }
 
     player.innerHTML = `<div class="video-player">${embedHtml}</div>`;
     
@@ -93,10 +109,11 @@ function openVideo(video) {
         <h2>${video.title}</h2>
         <p style="color:#888; margin-top:5px;">${video.category} • ${video.platform.toUpperCase()}</p>
         ${descriptionHTML}
+        ${video.platform === 'facebook' ? `<p style="color:#ffb800;margin-top:10px;font-size:12px;">⚠️ If video doesn't load, it may be set to Private on Facebook</p>` : ''}
     `;
     
     modal.classList.add('active');
-        // Reload Instagram embed script
+    
     if (video.platform === 'instagram') {
         setTimeout(() => {
             if (window.instgrm) {
@@ -111,7 +128,6 @@ function closeModal() {
     document.getElementById('playerContainer').innerHTML = '';
 }
 
-// Navigation Switching
 function showPage(page) {
     const mainContent = document.getElementById('mainContent');
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
@@ -129,15 +145,13 @@ function showPage(page) {
     } else if (page === 'rewards') {
         mainContent.innerHTML = '<div class="loading">🎁 Daily AI Quiz coming soon!</div>';
     } else if (page === 'admin') {
-        if (adminToken) {
-            renderAdminPanel();
+        if (adminToken) {            renderAdminPanel();
         } else {
             renderLoginScreen();
         }
     }
 }
 
-// Admin Login Screen
 function renderLoginScreen() {
     document.getElementById('mainContent').innerHTML = `
         <div class="login-container">
@@ -145,7 +159,8 @@ function renderLoginScreen() {
             <div class="form-group">
                 <label>Username</label>
                 <input type="text" id="loginUser" value="admin">
-            </div>            <div class="form-group">
+            </div>
+            <div class="form-group">
                 <label>Password</label>
                 <input type="password" id="loginPass" value="admin123">
             </div>
@@ -179,14 +194,12 @@ async function doLogin() {
             btn.innerText = "Login";
             btn.disabled = false;
         }
-    } catch (error) {
-        alert('Connection error.');
+    } catch (error) {        alert('Connection error.');
         btn.innerText = "Login";
         btn.disabled = false;
     }
 }
 
-// Admin Dashboard - Show ALL videos with Edit/Delete
 async function renderAdminPanel() {
     const mainContent = document.getElementById('mainContent');
     mainContent.innerHTML = '<div class="loading">Loading admin panel...</div>';
@@ -194,7 +207,8 @@ async function renderAdminPanel() {
     try {
         const res = await fetch(`${API_URL}/api/videos`);
         const videos = await res.json();
-                mainContent.innerHTML = `
+        
+        mainContent.innerHTML = `
             <div class="admin-container" style="max-width:100%;">
                 <h2 style="margin-bottom:20px;">Add New Video</h2>
                 <div class="form-group">
@@ -211,19 +225,25 @@ async function renderAdminPanel() {
                         <option value="GeneralVideos">General</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="videoDescription" rows="2" placeholder="Add a description..." style="width:100%;padding:10px;background:#0f0f0f;border:1px solid #333;color:white;border-radius:8px;"></textarea>
+                </div>
                 <button class="btn" id="addBtn" onclick="addVideo()">✨ Auto-Add Video</button>
                 <button class="btn" style="background:#333; margin-top:10px;" onclick="logout()">Logout</button>
                 
                 <h3 style="margin-top:40px;margin-bottom:20px;">All Videos (${videos.length})</h3>
                 <div style="display:grid;gap:15px;">
                     ${videos.map(video => `
-                        <div style="background:#272727;padding:15px;border-radius:10px;display:flex;gap:15px;align-items:center;">
-                            <img src="${video.thumbnail || 'https://via.placeholder.com/100x60'}" style="width:120px;height:68px;object-fit:cover;border-radius:5px;">
-                            <div style="flex:1;">
+                        <div style="background:#272727;padding:15px;border-radius:10px;display:flex;gap:15px;align-items:center;flex-wrap:wrap;">
+                            <img src="${video.thumbnail || 'https://via.placeholder.com/100x60'}" 
+                                 style="width:120px;height:68px;object-fit:cover;border-radius:5px;"
+                                 onerror="this.src='https://via.placeholder.com/100x60?text=${video.platform}'">
+                            <div style="flex:1;min-width:200px;">
                                 <h4 style="margin-bottom:5px;">${video.title}</h4>
                                 <p style="color:#888;font-size:12px;">${video.platform} • ${video.category}</p>
-                            </div>
-                            <button class="btn" style="width:auto;padding:8px 15px;background:#4169E1;" onclick='editVideo(${JSON.stringify(video).replace(/'/g, "\\'")})'>✏️ Edit</button>
+                                ${video.description ? `<p style="color:#aaa;font-size:11px;margin-top:5px;">${video.description}</p>` : ''}
+                            </div>                            <button class="btn" style="width:auto;padding:8px 15px;background:#4169E1;" onclick='editVideo(${JSON.stringify(video).replace(/'/g, "\\'")})'>✏️ Edit</button>
                             <button class="btn" style="width:auto;padding:8px 15px;background:#ff4444;" onclick="deleteVideo('${video._id}')">🗑️ Delete</button>
                         </div>
                     `).join('')}
@@ -242,8 +262,11 @@ async function addVideo() {
 
     const url = document.getElementById('videoLink').value;
     const category = document.getElementById('videoCategory').value;
+    const description = document.getElementById('videoDescription').value;
+    
     if (!url) {
-        alert('Please paste a link!');        btn.innerText = "✨ Auto-Add Video";
+        alert('Please paste a link!');
+        btn.innerText = "✨ Auto-Add Video";
         btn.disabled = false;
         return;
     }
@@ -262,13 +285,14 @@ async function addVideo() {
                 category: category,
                 thumbnail: info.thumbnail,
                 embedUrl: info.embedUrl,
-                videoId: info.videoId
+                videoId: info.videoId,
+                description: description
             })
         });
 
         if (saveRes.ok) {
             alert('Video added successfully!');
-            document.getElementById('videoLink').value = '';
+            document.getElementById('videoLink').value = '';            document.getElementById('videoDescription').value = '';
             renderAdminPanel();
         } else {
             alert('Error adding video.');
@@ -280,11 +304,11 @@ async function addVideo() {
     btn.disabled = false;
 }
 
-// Edit Video
 function editVideo(video) {
     document.getElementById('editVideoId').value = video._id;
     document.getElementById('editTitle').value = video.title;
     document.getElementById('editDescription').value = video.description || '';
+    document.getElementById('editThumbnail').value = video.thumbnail || '';
     document.getElementById('editModal').classList.add('active');
 }
 
@@ -292,14 +316,16 @@ async function saveVideoEdit() {
     const videoId = document.getElementById('editVideoId').value;
     const title = document.getElementById('editTitle').value;
     const description = document.getElementById('editDescription').value;
-        try {
+    const thumbnail = document.getElementById('editThumbnail').value;
+    
+    try {
         const res = await fetch(`${API_URL}/api/admin/videos/${videoId}`, {
             method: 'PUT',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${adminToken}`
             },
-            body: JSON.stringify({ title, description })
+            body: JSON.stringify({ title, description, thumbnail })
         });
         
         if (res.ok) {
@@ -315,10 +341,8 @@ async function saveVideoEdit() {
 }
 
 function closeEditModal() {
-    document.getElementById('editModal').classList.remove('active');
-}
+    document.getElementById('editModal').classList.remove('active');}
 
-// Delete Video
 async function deleteVideo(videoId) {
     if (!confirm('Are you sure you want to delete this video?')) return;
     
@@ -341,5 +365,6 @@ async function deleteVideo(videoId) {
 
 function logout() {
     localStorage.removeItem('adminToken');
-    adminToken = null;    renderLoginScreen();
+    adminToken = null;
+    renderLoginScreen();
 }

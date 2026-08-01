@@ -6,28 +6,30 @@
     <title>G-Tube</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Instagram Embed Script -->
+    <script async src="//www.instagram.com/embed.js"></script>
 </head>
 <body>
 
     <!-- Top Header -->
     <header class="header">
-        <div class="logo">
+        <div class="logo" onclick="showPage('home')">
             <div class="logo-icon"></div>
             <span>G-Tube</span>
         </div>
         <div class="header-actions">
             <button class="icon-btn">🔍</button>
-            <button class="icon-btn"></button>
+            <button class="icon-btn">🔔</button>
         </div>
     </header>
 
     <!-- Category Menu -->
     <nav class="category-nav">
-        <button class="cat-btn active">All</button>
-        <button class="cat-btn">Health</button>
-        <button class="cat-btn">Tech</button>
-        <button class="cat-btn">Business</button>
-        <button class="cat-btn">Relationship</button>
+        <button class="cat-btn active" onclick="filterCategory('All')">All</button>
+        <button class="cat-btn" onclick="filterCategory('Health')">Health</button>
+        <button class="cat-btn" onclick="filterCategory('Tech')">Tech</button>
+        <button class="cat-btn" onclick="filterCategory('Business')">Business</button>
+        <button class="cat-btn" onclick="filterCategory('Relationship')">Relationship</button>
     </nav>
 
     <!-- Main Content Area -->
@@ -35,7 +37,7 @@
         <div class="loading">Loading videos...</div>
     </main>
 
-    <!-- Video Player Modal (Hidden by default) -->
+    <!-- Video Player Modal -->
     <div id="videoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -44,11 +46,29 @@
         </div>
     </div>
 
+    <!-- Edit Video Modal (Admin) -->
+    <div id="editModal" class="modal">
+        <div class="modal-content" style="max-width:500px;padding:20px;">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Video</h2>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Title</label>
+                <input type="text" id="editTitle">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="editDescription" rows="4" style="width:100%;padding:10px;background:#0f0f0f;border:1px solid #333;color:white;border-radius:8px;"></textarea>
+            </div>
+            <input type="hidden" id="editVideoId">
+            <button class="btn" onclick="saveVideoEdit()">Save Changes</button>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="showPage('home')">🏠<br>Home</button>
         <button class="nav-item" onclick="showPage('gchat')">💬<br>G-Chat</button>
-        <button class="nav-item" onclick="showPage('admin')">🔒<br>Admin</button>
+        <button class="nav-item" onclick="showPage('admin')"><br>Admin</button>
         <button class="nav-item" onclick="showPage('rewards')">🎁<br>Rewards</button>
     </nav>
 
